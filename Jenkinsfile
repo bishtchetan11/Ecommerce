@@ -6,6 +6,8 @@ pipeline {
         MYSQL_DB_HOST = 'jdbc:mysql://localhost'
         MYSQL_DB_PORT = '3306'
         MYSQL_DB = 'Teacher'
+        MYSQL_USERNAME = credentials('MYSQL_USERNAME') // Securely inject username
+        MYSQL_PASSWORD = credentials('MYSQL_PASSWORD') // Securely inject password
 
     }
 
@@ -33,7 +35,7 @@ pipeline {
 
         stage('Package') {
             steps {
-                sh 'mvn package -DMYSQL_DB_HOST=$MYSQL_DB_HOST -DMYSQL_DB_PORT=$MYSQL_DB_PORT -DMYSQL_DB=$MYSQL_DB'
+                sh 'mvn package -DMYSQL_DB_HOST=$MYSQL_DB_HOST -DMYSQL_DB_PORT=$MYSQL_DB_PORT -DMYSQL_DB=$MYSQL_DB -DMYSQL_USER=$MYSQL_USERNAME -DMYSQL_PASSWORD=$MYSQL_PASSWORD'
             }
         }
 
