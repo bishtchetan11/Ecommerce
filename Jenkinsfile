@@ -2,7 +2,11 @@ pipeline {
     agent any
    
     environment {
-        GIT_CREDENTIALS = credentials('github-pat') // ID from Jenkins credentials
+        GIT_CREDENTIALS = credentials('github-pat') 
+        MYSQL_DB_HOST = 'localhost'
+        MYSQL_DB_PORT = '3306'
+        MYSQL_DB = 'Teacher'
+
     }
 
 
@@ -29,7 +33,7 @@ pipeline {
 
         stage('Package') {
             steps {
-                sh 'mvn package'
+                sh 'mvn package -DMYSQL_DB_HOST=$MYSQL_DB_HOST -DMYSQL_DB_PORT=$MYSQL_DB_PORT -DMYSQL_DB=$MYSQL_DB'
             }
         }
 
