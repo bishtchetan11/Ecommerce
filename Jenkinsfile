@@ -1,5 +1,10 @@
 pipeline {
     agent any
+   
+    environment {
+        GIT_CREDENTIALS = credentials('github-pat') // ID from Jenkins credentials
+    }
+
 
     stages {
         stage('Checkout') {
