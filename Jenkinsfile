@@ -9,8 +9,8 @@ pipeline {
     stages {
         stage('Checkout') {
             steps {
-                git 'https://github.com/your-username/sample-java-project.git',
-                credentialsId: 'github-pat'
+                git url: 'https://github.com/your-username/sample-java-project.git',
+                    credentialsId: 'github-pat'
             }
         }
 
