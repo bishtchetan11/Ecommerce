@@ -3,7 +3,7 @@ pipeline {
    
     environment {
         GIT_CREDENTIALS = credentials('github-pat') 
-        MYSQL_DB_HOST = 'localhost'
+        MYSQL_DB_HOST = 'jdbc:mysql://localhost'
         MYSQL_DB_PORT = '3306'
         MYSQL_DB = 'Teacher'
 
