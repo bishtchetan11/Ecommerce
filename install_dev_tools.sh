@@ -39,4 +39,17 @@ sudo systemctl enable jenkins || handle_error "enabling Jenkins"
 
 echo "✅  Installation completed successfully!" | tee -a install_log.txt
 echo "🔑  Jenkins is running on port 8080. Access it via: http://localhost:8080" | tee -a install_log.txt
+
+# Create MySQL user and database
+echo "🧑 <200d>💻  Creating MySQL user and database..." | tee -a install_log.txt
+sudo mysql -u root <<EOF
+CREATE DATABASE Teacher;
+CREATE USER 'springstudent'@'localhost' IDENTIFIED BY 'Springstudent@123';
+GRANT ALL PRIVILEGES on Teacher.* to springstudent@localhost;
+FLUSH PRIVILEGES;
+EOF
+
+if [ $? -ne 0 ]; then
+    handle_error "creating MySQL user and database"
+fi
                                                                                                                                                                                                                                                                                                                                     33,110        All
