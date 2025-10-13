@@ -9,6 +9,8 @@ pipeline {
         MYSQL_USERNAME = credentials('MYSQL_USERNAME') // Securely inject username
         MYSQL_PASSWORD = credentials('MYSQL_PASSWORD') // Securely inject password
 
+        SONARQUBE_SERVER = 'SonarQubeServer' // SonarQube server name in Jenkins
+        SONAR_PROJECT_KEY = 'Ecommerce' // Unique project key for SonarQube
     }
 
 
@@ -20,6 +22,17 @@ pipeline {
                     credentialsId: 'github-pat'
             }
         }
+
+
+
+        stage('SonarQube Analysis') {
+            steps {
+                withSonarQubeEnv("${SONARQUBE_SERVER}") {
+                    sh 'mvn clean verify sonar:sonar -Dsonar.projectKey=${SONAR_PROJECT_KEY}'
+                }
+            }
+        }
+
 
         stage('Build') {
             steps {
