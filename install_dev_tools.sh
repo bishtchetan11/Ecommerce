@@ -43,8 +43,8 @@ echo "🔑  Jenkins is running on port 8080. Access it via: http://localhost:808
 # Create MySQL user and database
 echo "🧑 <200d>💻  Creating MySQL user and database..." | tee -a install_log.txt
 sudo mysql -u root <<EOF
-CREATE DATABASE Teacher;
-CREATE USER 'springstudent'@'localhost' IDENTIFIED BY 'Springstudent@123';
+CREATE DATABASE IF NOT EXISTS  Teacher;
+CREATE USER IF NOT EXISTS 'springstudent'@'localhost' IDENTIFIED BY 'Springstudent@123';
 GRANT ALL PRIVILEGES on Teacher.* to springstudent@localhost;
 FLUSH PRIVILEGES;
 EOF
@@ -52,4 +52,59 @@ EOF
 if [ $? -ne 0 ]; then
     handle_error "creating MySQL user and database"
 fi
-                                                                                                                                                                                                                                                                                                                                    33,110        All
+echo "✅  MySQL user and database created successfully!" | tee -a install_log.txt
+
+#Install Unzip
+echo "☕  Installing Unzip..."
+sudo apt install -y  unzip  || handle_error "installing dependencies"
+unzip -v || handle_error "verifying Unzip installation"
+
+
+
+# Create SonarQube user
+echo "👤  Creating SonarQube user..."
+sudo useradd -r -s /bin/false sonarqube || echo "SonarQube user may already exist"
+
+
+
+# Download SonarQube
+SONAR_VERSION="10.2.0.77647"
+echo "⬇️ Downloading SonarQube ${SONAR_VERSION}..."
+wget https://binaries.sonarsource.com/Distribution/sonarqube/sonarqube-${SONAR_VERSION}.zip || handle_error "downloading SonarQube"
+
+
+sudo rm -rf /opt/sonarqube
+
+echo "📂  Extracting SonarQube..."
+unzip sonarqube-${SONAR_VERSION}.zip || handle_error "unzipping SonarQube"
+sudo mv sonarqube-${SONAR_VERSION} /opt/sonarqube
+sudo chown -R sonarqube:sonarqube /opt/sonarqube
+
+# Create systemd service
+echo "🛠️  Creating systemd service..."
+cat <<EOF | sudo tee /etc/systemd/system/sonarqube.service
+[Unit]
+Description=SonarQube service
+After=syslog.target network.target
+
+[Service]
+Type=forking
+ExecStart=/opt/sonarqube/bin/linux-x86-64/sonar.sh start
+ExecStop=/opt/sonarqube/bin/linux-x86-64/sonar.sh stop
+User=sonarqube
+Group=sonarqube
+Restart=always
+
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
+# Start SonarQube
+echo "Starting SonarQube service..."
+sudo systemctl daemon-reexec
+sudo systemctl enable sonarqube
+sudo systemctl start sonarqube || handle_error "starting SonarQube"
+
+echo "SonarQube installation complete!"
+echo "Access SonarQube at: http://localhost:9000"
