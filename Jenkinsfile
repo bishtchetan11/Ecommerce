@@ -54,7 +54,7 @@ pipeline {
 
         stage('Archive Artifacts') {
             steps {
-                archiveArtifacts artifacts: '**/target/*.jar', fingerprint: true
+                archiveArtifacts artifacts: '**/target/ecommerce-${env.BUILD_NUMBER}.jar', fingerprint: true
             }
         }
 
