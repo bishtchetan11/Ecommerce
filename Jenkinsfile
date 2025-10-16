@@ -49,6 +49,7 @@ pipeline {
         stage('Package') {
             steps {
                 sh 'mvn package -DMYSQL_DB_HOST=$MYSQL_DB_HOST -DMYSQL_DB_PORT=$MYSQL_DB_PORT -DMYSQL_DB=$MYSQL_DB -DMYSQL_USER=$MYSQL_USERNAME -DMYSQL_PASSWORD=$MYSQL_PASSWORD'
+                mv target/ecommerce*.jar target/ecommerce-${BUILD_NUMBER}.jar
             }
         }
 
