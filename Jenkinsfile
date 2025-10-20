@@ -91,7 +91,7 @@ pipeline {
                       "files": [
                         {
                           "pattern": "target/${JAR_NAME}",
-                          "target": "${ARTIFACTORY_REPO}/com/bisht/ecommerce/${JAR_NAME}"
+                          "target": "${ARTIFACTORY_REPO}/${JAR_NAME}"
                         }
                       ]
                     }"""
