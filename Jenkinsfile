@@ -12,6 +12,11 @@ pipeline {
         SONARQUBE_SERVER = 'SonarQubeServer' // SonarQube server name in Jenkins
         SONAR_PROJECT_KEY = 'Ecommerce' // Unique project key for SonarQube
         JAR_NAME = "ecommerce-${BUILD_NUMBER}.jar"  
+
+
+        ARTIFACTORY_SERVER = 'artifactory-server'
+        REPO = '1-libs-release-local'
+
     }
 
 
