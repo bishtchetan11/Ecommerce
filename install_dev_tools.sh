@@ -108,3 +108,177 @@ sudo systemctl start sonarqube || handle_error "starting SonarQube"
 
 echo "SonarQube installation complete!"
 echo "Access SonarQube at: http://localhost:9000"
+
+
+
+sudo apt update && sudo apt upgrade -y
+
+
+echo "deb https://releases.jfrog.io/artifactory/artifactory-debs xenial main" | sudo tee -a /etc/apt/sources.list.d/artifactory.list
+curl -fsSL https://releases.jfrog.io/artifactory/api/gpg/key/public | sudo gpg --dearmor -o /etc/apt/trusted.gpg.d/artifactory.gpg
+sudo apt update
+
+sudo apt install jfrog-artifactory-oss -y
+
+sudo systemctl start artifactory.service
+sudo systemctl enable artifactory.service
+
+sudo adduser nexus
+sudo visudo
+# Add: nexus ALL=(ALL) NOPASSWD: ALL
+
+
+#curl -v https://download.sonatype.com/nexus/3/nexus-3.45.0-01-unix.tar.gz --output nexus-latest-unix.tar.gz
+
+cd /opt
+sudo apt install wget -y
+sudo  wget https://cdn.download.sonatype.com/repository/downloads-prod-group/3/nexus-3.45.0-01-unix.tar.gz
+sudo tar -xvzf latest-unix.tar.gz
+sudo mv nexus-3.* nexus
+sudo chown -R nexus:nexus /opt/nexus /opt/sonatype-work
+
+
+#!/bin/bash
+
+# Define the nexus.rc file path
+NEXUS_RC_PATH="/opt/nexus/bin/nexus.rc"
+
+# Check if the file exists
+if [ -f "$NEXUS_RC_PATH" ]; then
+    echo 'Configuring Nexus to run as user "nexus"...'
+    echo 'run_as_user="nexus"' > "$NEXUS_RC_PATH"
+    echo "Configuration updated successfully."
+else
+    echo "Error: $NEXUS_RC_PATH does not exist."
+    exit 1
+fi
+
+
+# Create systemd service
+echo "🛠️  Creating systemd service..."
+cat <<EOF | sudo tee /etc/systemd/system/nexus.service
+[Unit]
+Description=Nexus service
+After=syslog.target network.target
+
+[Unit]
+Description=nexus service
+After=network.target
+
+[Service]
+Type=forking
+LimitNOFILE=65536
+ExecStart=/opt/nexus/bin/nexus start
+ExecStop=/opt/nexus/bin/nexus stop
+User=nexus
+Restart=on-abort
+[Install]
+WantedBy=multi-user.target
+EOF
+
+
+sudo systemctl start nexus
+sudo systemctl disable nexus
+
+
+# Variables
+ARTIFACTORY_HOME=/opt/jfrog/artifactory
+ARTIFACTORY_USER=artifactory
+ARTIFACTORY_GROUP=artifactory
+POSTGRES_USER=artifactory
+POSTGRES_DB=artifactory
+POSTGRES_PASSWORD=Devops@1234
+JDBC_DRIVER_URL=https://jdbc.postgresql.org/download/postgresql-42.6.0.jar
+JDBC_DRIVER_NAME=postgresql-42.6.0.jar
+
+# Create artifactory user and group
+if ! id "$ARTIFACTORY_USER" &>/dev/null; then
+    sudo groupadd $ARTIFACTORY_GROUP
+    sudo useradd -r -s /bin/false -g $ARTIFACTORY_GROUP $ARTIFACTORY_USER
+fi
+
+# Install PostgreSQL
+if ! command -v psql &>/dev/null; then
+    if [ -f /etc/debian_version ]; then
+        sudo apt update
+        sudo apt install -y postgresql postgresql-contrib
+    elif [ -f /etc/redhat-release ]; then
+        sudo yum install -y postgresql-server postgresql-contrib
+        sudo postgresql-setup initdb
+    fi
+    sudo systemctl enable postgresql
+    sudo systemctl start postgresql
+fi
+
+
+
+# Download and install Artifactory
+wget -O artifactory.tar.gz https://releases.jfrog.io/artifactory/artifactory-pro/org/artifactory/pro/jfrog-artifactory-pro/7.77.5/jfrog-artifactory-pro-7.77.5-linux.tar.gz
+tar -xzf artifactory.tar.gz
+sudo mv jfrog-artifactory-pro-7.77.5 $ARTIFACTORY_HOME
+sudo chown -R $ARTIFACTORY_USER:$ARTIFACTORY_GROUP $ARTIFACTORY_HOME
+
+# Create PID folder
+sudo mkdir -p $ARTIFACTORY_HOME/var/work/artifactory/tomcat
+sudo chown -R $ARTIFACTORY_USER:$ARTIFACTORY_GROUP $ARTIFACTORY_HOME/var/work
+
+
+
+
+# Configure system.yaml
+cat <<EOF | sudo tee $ARTIFACTORY_HOME/var/etc/system.yaml
+shared:
+  database:
+    type: postgresql
+    driver: org.postgresql.Driver
+    url: jdbc:postgresql://localhost:5432/$POSTGRES_DB
+    username: $POSTGRES_USER
+    password: $POSTGRES_PASSWORD
+  user: $ARTIFACTORY_USER
+  group: $ARTIFACTORY_GROUP
+EOF
+
+
+# Download JDBC driver
+wget -O $JDBC_DRIVER_NAME $JDBC_DRIVER_URL
+sudo mv $JDBC_DRIVER_NAME $ARTIFACTORY_HOME/app/artifactory/tomcat/lib/
+
+
+# Create systemd service
+cat <<EOF | sudo tee /etc/systemd/system/artifactory.service
+[Unit]
+Description=JFrog Artifactory
+After=network.target
+
+[Service]
+Type=simple
+ExecStart=$ARTIFACTORY_HOME/app/bin/artifactory.sh start
+ExecStop=$ARTIFACTORY_HOME/app/bin/artifactory.sh stop
+Restart=on-failure
+User=$ARTIFACTORY_USER
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
+
+# Generate master key
+openssl rand -base64 32 > "$MASTER_KEY_PATH"
+
+# Set permissions
+chown artifactory:artifactory "$MASTER_KEY_PATH"
+chmod 600 "$MASTER_KEY_PATH"
+
+# Configure PostgreSQL
+sudo -u postgres psql <<EOF
+CREATE USER $POSTGRES_USER WITH PASSWORD '$POSTGRES_PASSWORD';
+CREATE DATABASE $POSTGRES_DB;
+GRANT ALL PRIVILEGES ON DATABASE $POSTGRES_DB TO $POSTGRES_USER;
+EOF
+
+sudo systemctl daemon-reexec
+sudo systemctl daemon-reload
+sudo systemctl start artifactory
+sudo systemctl enable artifactory
+
+echo "Artifactory installation complete. Access it at http://<your-server-ip>:8081/artifactory"
