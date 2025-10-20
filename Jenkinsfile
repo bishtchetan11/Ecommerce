@@ -14,11 +14,15 @@ pipeline {
         JAR_NAME = "ecommerce-${BUILD_NUMBER}.jar"  
 
 
-        ARTIFACTORY_SERVER = 'artifactory-server'
+        //ARTIFACTORY_SERVER = 'artifactory-server'
+        //ARTIFACTORY_REPO = 'ecommerce'
+
+        ARTIFACTORY_URL = 'http://a3c3ab05731c.mylabserver.com:8082/artifactory'
         ARTIFACTORY_REPO = 'ecommerce'
-        
+        ARTIFACTORY_USER = 'admin'
+        ARTIFACTORY_PASSWORD = credentials('Artifactory_Password') // Store password securely in Jenkins
 
-
+    
 
     }
 
@@ -85,7 +89,7 @@ pipeline {
 
 
 
-
+/*****
   stage('Upload to JFROG Artifactory') {
             steps {
                 script {
@@ -109,7 +113,22 @@ pipeline {
                         server.upload(uploadSpec)
                     }
                 }
-            }
+            }*****/
+
+
+stage('Upload via curl') {
+    steps {
+        script {
+            def uploadUrl = "${ARTIFACTORY_URL}/${ARTIFACTORY_REPO}/${JAR_NAME}"
+            sh """
+            curl -u ${ARTIFACTORY_USER}:${ARTIFACTORY_PASSWORD} \
+                 -T target/${JAR_NAME} \
+                 "${uploadUrl}"
+            """
+        }
+    }
+}
+
 
 
     }
