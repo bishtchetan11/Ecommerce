@@ -11,6 +11,7 @@ pipeline {
 
         SONARQUBE_SERVER = 'SonarQubeServer' // SonarQube server name in Jenkins
         SONAR_PROJECT_KEY = 'Ecommerce' // Unique project key for SonarQube
+        JAR_NAME = "ecommerce-${BUILD_NUMBER}.jar"  
     }
 
 
@@ -69,11 +70,31 @@ pipeline {
                 }
             }
         }
+
+
+
+
+  stage('Upload to Artifactory') {
+            steps {
+                script {
+                    def server = Artifactory.server("${ARTIFACTORY_SERVER}")
+
+                    def uploadSpec = """{
+                      "files": [
+                        {
+                          "pattern": "target/${JAR_NAME}",
+                          "target": "${ARTIFACTORY_REPO}/com/bisht/ecommerce/${JAR_NAME}"
+                        }
+                      ]
+                    }"""
+
+                        server.upload(uploadSpec)
+                    }
+                }
+            }
+
+
     }
-
-
-
-
 
     post {
         success {
