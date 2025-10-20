@@ -21,6 +21,16 @@ pipeline {
 
 
     stages {
+
+
+
+ stage('Clean Workspace') {
+            steps {
+                cleanWs()
+            }
+        }
+
+
         stage('Checkout') {
             steps {
                 git url: 'https://github.com/bishtchetan11/Ecommerce.git',
