@@ -15,7 +15,10 @@ pipeline {
 
 
         ARTIFACTORY_SERVER = 'artifactory-server'
-        REPO = 'ecommerce'
+        ARTIFACTORY_REPO = 'ecommerce'
+        
+
+
 
     }
 
