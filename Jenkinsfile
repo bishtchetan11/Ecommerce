@@ -89,7 +89,10 @@ pipeline {
   stage('Upload to JFROG Artifactory') {
             steps {
                 script {
-                    def server = Artifactory.server("${ARTIFACTORY_SERVER}")
+                    #def server = Artifactory.server("${ARTIFACTORY_SERVER}")
+
+
+                    def server = Artifactory.newServer url: 'http://a3c3ab05731d.mylabserver.com:8082', credentialsId: 'artifactory-creds'
 
 
                 //def server = Artifactory.newServer url: 'http://localhost:8082/artifactory', credentialsId: 'jfrog-id'
